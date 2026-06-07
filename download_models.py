@@ -1,70 +1,21 @@
-"""
-Скрипт для автоматичного завантаження та розпакування моделей Vosk.
-Запустіть один раз перед першим стартом бота: python download_models.py
-"""
-
 import os
-import shutil
-import zipfile
 import urllib.request
-from pathlib import Path
+import zipfile
 
-MODELS_DIR = Path(__file__).parent / "models"
+MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
+os.makedirs(MODELS_DIR, exist_ok=True)
 
-MODELS = [
-    {
-        "name": "uk_v3_dynamic_nano",
-        "url": "https://huggingface.co/Yehor/vosk-uk/resolve/main/uk_v3_dynamic_nano.zip",
-    },
-]
+URL = "https://huggingface.co/Yehor/vosk-uk/resolve/main/uk_v3_dynamic_nano.zip"
+ZIP_PATH = os.path.join(MODELS_DIR, "model.zip")
 
+print("Завантаження моделі...")
+urllib.request.urlretrieve(URL, ZIP_PATH)
+print("Розпакування...")
 
-def download_with_progress(url: str, dest: Path) -> None:
-    """Завантажує файл з відображенням прогресу."""
-    def reporthook(block_num, block_size, total_size):
-        downloaded = block_num * block_size
-        if total_size > 0:
-            percent = min(downloaded * 100 / total_size, 100)
-            mb_done = downloaded / 1_048_576
-            mb_total = total_size / 1_048_576
-            print(f"\r  {percent:5.1f}%  {mb_done:.1f} / {mb_total:.1f} МБ", end="", flush=True)
+with zipfile.ZipFile(ZIP_PATH, "r") as z:
+    names = {n.split("/")[0] for n in z.namelist()}
+    print(f"Folders in zip: {names}")
+    z.extractall(MODELS_DIR)
 
-    urllib.request.urlretrieve(url, dest, reporthook)
-    print()  # новий рядок після завершення
-
-
-def main() -> None:
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-
-    for model in MODELS:
-        model_dir = MODELS_DIR / model["name"]
-        zip_path = MODELS_DIR / f"{model['name']}.zip"
-
-        if model_dir.exists():
-            print(f"✅ Модель '{model['name']}' вже існує, пропускаємо.")
-            continue
-
-        print(f"\n⬇️  Завантаження '{model['name']}'...")
-        download_with_progress(model["url"], zip_path)
-
-        print(f"📦 Розпакування '{model['name']}'...")
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            zf.extractall(MODELS_DIR)
-            top_level = {name.split("/")[0] for name in zf.namelist()}
-            extracted_name = top_level.pop()
-
-        zip_path.unlink()
-
-        extracted_path = MODELS_DIR / extracted_name
-        expected_path = MODELS_DIR / model["name"]
-        if extracted_name != model["name"] and extracted_path.exists():
-            shutil.move(str(extracted_path), str(expected_path))
-            print(f"  Перейменовано '{extracted_name}' -> '{model['name']}'")
-
-        print(f"✅ '{model['name']}' готово.")
-
-    print("\n🎉 Модель завантажено та розпаковано у папку 'models/'.")
-
-
-if __name__ == "__main__":
-    main()
+os.remove(ZIP_PATH)
+print("Done!")

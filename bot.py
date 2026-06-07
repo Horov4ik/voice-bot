@@ -42,7 +42,12 @@ def _short_path(path: str) -> str:
 MODELS_DIR = _short_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "models"))
 
 logger.info("Завантаження моделі Vosk (uk)...")
-MODEL = Model(os.path.join(MODELS_DIR, "uk_v3_dynamic_nano"))
+model_dirs = [d for d in os.listdir(MODELS_DIR) if os.path.isdir(os.path.join(MODELS_DIR, d))]
+if not model_dirs:
+    raise RuntimeError("No model found in models/ directory")
+model_path = os.path.join(MODELS_DIR, model_dirs[0])
+logger.info("Using model: %s", model_path)
+MODEL = Model(model_path)
 logger.info("Модель завантажено.")
 
 
