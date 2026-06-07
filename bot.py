@@ -42,7 +42,7 @@ def _short_path(path: str) -> str:
 MODELS_DIR = _short_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "models"))
 
 logger.info("Завантаження моделі Vosk (uk)...")
-MODEL = Model(os.path.join(MODELS_DIR, "vosk-model-uk-v3"))
+MODEL = Model(os.path.join(MODELS_DIR, "uk_v3_dynamic_nano"))
 logger.info("Модель завантажено.")
 
 

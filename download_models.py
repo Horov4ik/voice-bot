@@ -12,8 +12,8 @@ MODELS_DIR = Path(__file__).parent / "models"
 
 MODELS = [
     {
-        "name": "vosk-model-uk-v3",
-        "url": "https://huggingface.co/alphacep/vosk-model-uk/resolve/main/vosk-model-uk-v3.zip",
+        "name": "uk_v3_dynamic_nano",
+        "url": "https://huggingface.co/Yehor/vosk-uk/resolve/main/uk_v3_dynamic_nano.zip",
     },
 ]
 
