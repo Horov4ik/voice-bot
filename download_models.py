@@ -5,7 +5,7 @@ import zipfile
 MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
-URL = "https://huggingface.co/Yehor/vosk-uk/resolve/main/uk_v3_dynamic_nano.zip"
+URL = "https://huggingface.co/Yehor/vosk-uk/resolve/main/vosk_model_v1.zip"
 ZIP_PATH = os.path.join(MODELS_DIR, "model.zip")
 
 print("Завантаження моделі...")
