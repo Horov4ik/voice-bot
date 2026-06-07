@@ -4,6 +4,7 @@
 """
 
 import os
+import shutil
 import zipfile
 import urllib.request
 from pathlib import Path
@@ -49,8 +50,17 @@ def main() -> None:
         print(f"📦 Розпакування '{model['name']}'...")
         with zipfile.ZipFile(zip_path, "r") as zf:
             zf.extractall(MODELS_DIR)
+            top_level = {name.split("/")[0] for name in zf.namelist()}
+            extracted_name = top_level.pop()
 
         zip_path.unlink()
+
+        extracted_path = MODELS_DIR / extracted_name
+        expected_path = MODELS_DIR / model["name"]
+        if extracted_name != model["name"] and extracted_path.exists():
+            shutil.move(str(extracted_path), str(expected_path))
+            print(f"  Перейменовано '{extracted_name}' -> '{model['name']}'")
+
         print(f"✅ '{model['name']}' готово.")
 
     print("\n🎉 Модель завантажено та розпаковано у папку 'models/'.")
