@@ -1,16 +1,11 @@
 import os
-import sys
-import ctypes
 import logging
 import tempfile
 import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dotenv import load_dotenv
 import imageio_ffmpeg
-from vosk import Model, KaldiRecognizer
-import wave
-import json
+from faster_whisper import WhisperModel
 
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
@@ -27,43 +22,23 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
 
+LANGUAGE_FLAGS = {
+    "uk": "🇺🇦",
+    "ru": "🇷🇺",
+    "en": "🇬🇧",
+}
 
-def _short_path(path: str) -> str:
-    """На Windows конвертує шлях у короткий 8.3-формат (без юнікоду).
-    Vosk використовує C++ fopen, який не підтримує кириличні шляхи на Windows."""
-    if sys.platform != "win32":
-        return path
-    buf = ctypes.create_unicode_buffer(512)
-    if ctypes.windll.kernel32.GetShortPathNameW(path, buf, 512):
-        return buf.value
-    return path
-
-
-MODELS_DIR = _short_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "models"))
-
-logger.info("Завантаження моделі Vosk (uk)...")
-model_dirs = [d for d in os.listdir(MODELS_DIR) if os.path.isdir(os.path.join(MODELS_DIR, d))]
-if not model_dirs:
-    raise RuntimeError("No model found in models/ directory")
-model_path = os.path.join(MODELS_DIR, model_dirs[0])
-logger.info("Using model: %s", model_path)
-MODEL = Model(model_path)
+logger.info("Завантаження моделі Whisper (tiny)...")
+MODEL = WhisperModel("small", device="cpu", compute_type="int8")
 logger.info("Модель завантажено.")
 
 
-def transcribe(wav_path: str) -> str:
-    """Транскрибує WAV-файл українською моделлю Vosk."""
-    with wave.open(wav_path, "rb") as wf:
-        rec = KaldiRecognizer(MODEL, wf.getframerate())
-        all_words: list[dict] = []
-        while True:
-            data = wf.readframes(4000)
-            if not data:
-                break
-            if rec.AcceptWaveform(data):
-                all_words.extend(json.loads(rec.Result()).get("result", []))
-        all_words.extend(json.loads(rec.FinalResult()).get("result", []))
-    return " ".join(w["word"] for w in all_words)
+def transcribe(wav_path: str) -> tuple[str, str]:
+    """Транскрибує WAV-файл. Повертає (language, text)."""
+    segments, info = MODEL.transcribe(wav_path, language="uk")
+    text = " ".join(s.text.strip() for s in segments).strip()
+    logger.info("Мова: %s, текст: '%s'", info.language, text)
+    return info.language, text
 
 
 def convert_to_wav(input_path: str, output_path: str) -> None:
@@ -109,12 +84,13 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             tmp_wav = f.name
 
         convert_to_wav(tmp_input, tmp_wav)
-        text = transcribe(tmp_wav)
+        lang, text = transcribe(tmp_wav)
 
+        flag = LANGUAGE_FLAGS.get(lang, "🌐")
         first_name = user.first_name if user else "Unknown"
 
         if text:
-            reply = f"🗣 *{first_name}* 🇺🇦\n_{text}_"
+            reply = f"🗣 *{first_name}* {flag}\n_{text}_"
         else:
             reply = "🤷 Не вдалося розпізнати"
 
