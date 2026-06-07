@@ -12,8 +12,8 @@ MODELS_DIR = Path(__file__).parent / "models"
 
 MODELS = [
     {
-        "name": "vosk-model-small-uk-v3",
-        "url": "https://alphacephei.com/vosk/models/vosk-model-small-uk-v3.zip",
+        "name": "vosk-model-uk-v3",
+        "url": "https://huggingface.co/alphacep/vosk-model-uk/resolve/main/vosk-model-uk-v3.zip",
     },
 ]
 
